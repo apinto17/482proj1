@@ -69,7 +69,7 @@ def extract_subject(document):
     # and most frequent nouns. It takes the first element in the list
     subject_nouns = [entity for entity in top_10_entities
                     if entity.split()[0] in most_freq_nouns]
-    print subject_nouns
+    print(subject_nouns)
     return subject_nouns[0]
 
 def trained_tagger(existing=False):
@@ -153,10 +153,10 @@ if __name__ == '__main__':
     url = 'http://www.nytimes.com/2016/06/13/us/politics/bernie-sanders-campaign.html?hp&action=click&pgtype=Homepage&clickSource=story-heading&module=first-column-region&region=top-news&WT.nav=top-news'
     document = download_document(url)
     # document = pickle.load(open('document.pkl', 'rb'))
-    print document
+    print(document)
     document = clean_document(document)
     subject = extract_subject(document)
-    print subject
+    print(subject)
 
     tagged_sents = tag_sentences(subject, document)
 
@@ -164,4 +164,7 @@ if __name__ == '__main__':
                         for sentence in tagged_sents]
     for svo in svos:
         if svo:
-            print svo
+            print(svo)
+
+
+
