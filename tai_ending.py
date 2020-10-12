@@ -134,33 +134,16 @@ def has_imperative(concl):
 
 
 def is_imperative(tagged_sent):
-    # if the sentence is not a question
-    if(tagged_sent[-1][0] != "?"):
-        # catches simple imperatives
-        if(tagged_sent[0][1] == "VB" or tagged_sent[0][1] == "MD"):
-            return True
+    # catches simple imperatives
+    if(tagged_sent[0][1] == "VB" or tagged_sent[0][1] == "MD"):
+        return True
 
-        # catches imperative sentences starting with words like 'please', 'you'
-        else:
-            chunk = get_chunks(tagged_sent)
-            # check if the first chunk of the sentence is a VB-Phrase
-            if(type(chunk[0]) is Tree and chunk[0].label() == "VB-Phrase"):
-                return True
-
-    # Questions as imperatives
+    # catches imperative sentences starting with words like 'please', 'you'
     else:
         chunk = get_chunks(tagged_sent)
-        # check if sentence contains the word 'please'
-        pls = len([w for w in tagged_sent if w[0].lower() == "please"]) > 0
-        # catches requests disguised as questions
-        if(pls and (tagged_sent[0][1] == "VB" or tagged_sent[0][1] == "MD")):
+        # check if the first chunk of the sentence is a VB-Phrase
+        if(type(chunk[0]) is Tree and chunk[0].label() == "VB-Phrase"):
             return True
-
-        # catches imperatives ending with a Question tag
-        # and starting with a verb 
-        elif(type(chunk[-1]) is Tree and chunk[-1].label() == "Q-Tag"):
-            if(chunk[0][1] == "VB" or (type(chunk[0]) is Tree and chunk[0].label() == "VB-Phrase")):
-                return True
 
     return False
 

@@ -41,8 +41,6 @@ def main():
 def output_accuracy(true_grades, predicted_grades):
     num_correct = 0
     for i in range(len(predicted_grades)):
-        print("\n\nPREDICTED: " + str(predicted_grades[i]))
-        print("TRUE GRADES: " + str(true_grades[i]))
         if(true_grades[i] == predicted_grades[i]):
             num_correct += 1
 
