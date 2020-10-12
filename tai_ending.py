@@ -17,25 +17,15 @@ def grade_ending(doc, classifier):
 
     # get basic metrics of conclusion
     num_words = len(nltk.word_tokenize(concl))
-    num_sents = len(nltk.sent_tokenize(concl))
 
-    # find if the student used a question or made a call to action
-    contains_question_or_imperative = has_imperative(concl) or "?" in concl
-
-    # classify general complexity of essay into 2, 3, 4, 5, 6
+    # classify general complexity of essay into 1, 2, 3, 4, 5, 6
     complexity = classify_complexity(concl, classifier)
 
     # classify conclusions using these metrics
     if(num_words == 1):
         return 0
-    elif(num_sents == 1 and not contains_question_or_imperative):
-        return 1
-    elif(num_sents == 1 and contains_question_or_imperative):
-        return 2
-    elif(contains_question_or_imperative):
-        return math.floor(complexity)
     else:
-        return 0
+        return complexity
     
 
 
@@ -72,13 +62,16 @@ def train_complexity_classifier(train):
             feature_dict = make_feature_dict(concl)
             training_set.append((feature_dict, grade))
 
-    return nltk.classify.DecisionTreeClassifier.train(training_set, entropy_cutoff=0, support_cutoff=0)
+    return nltk.classify.NaiveBayesClassifier.train(training_set)
+
+
 
 
 # makes a list of features to use for the complexity classifier
 def make_feature_dict(concl):
     feature_dict = {}
 
+    # get basic features for model
     num_chars = len(re.findall("[A-Za-z]", concl))
     num_words = len(nltk.word_tokenize(concl))
     num_sents = len(nltk.sent_tokenize(concl))
@@ -86,12 +79,17 @@ def make_feature_dict(concl):
     if(num_words <= 1 or num_sents <= 1):
         return None
 
+    # see if the conclusion contains a question or call to action
+    feature_dict["imperative"] = has_imperative(concl) or "?" in concl
+
+    # add basic features to feature_dict
     feature_dict["num_chars"] = num_chars 
     feature_dict["num_words"] = num_words
     feature_dict["num_sents"] = num_sents
 
     feature_dict["avg_chars_per_word"] = (num_chars / num_words)
     feature_dict["avg_words_per_sent"] = (num_words / num_sents)
+
 
     return feature_dict
 
@@ -112,8 +110,10 @@ def extact_training_data(docs):
         if(num_words <= 1 or num_sents <= 1):
             continue
 
-        # appends (conclusion, grade of ending) to training_data
+        # get grade and round down
         grade = doc["grades"][1]["score"]["criteria"]["ending"]
+        grade = math.floor(grade)
+        # appends (conclusion, grade of ending) to training_data
         training_data.append((concl, grade))
 
     return training_data
@@ -163,6 +163,9 @@ def is_imperative(tagged_sent):
                 return True
 
     return False
+
+
+
 
 # chunks the sentence into grammatical phrases based on its POS-tags
 def get_chunks(tagged_sent):

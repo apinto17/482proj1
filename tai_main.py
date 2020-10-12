@@ -28,12 +28,26 @@ def main():
         ending_grade = grade_ending(doc["plaintext"], concl_classifier)
         predicted_grades.append(ending_grade)
 
-    confusion_matrix(true_grades, predicted_grades)
+    output_accuracy(true_grades, predicted_grades)
+
+    cm = confusion_matrix(true_grades, predicted_grades)
 
     # change confusion matrix to data frame and output to csv
-    cm_as_df=cm2df(confusion_matrix,list(set(true_grades)))
-    cm_as_df.to_csv("ending_confusion_matrix")
+    cm_as_df=cm2df(cm,list(set(true_grades)))
+    cm_as_df.to_csv("ending_confusion_matrix.csv")
     
+
+
+def output_accuracy(true_grades, predicted_grades):
+    num_correct = 0
+    for i in range(len(predicted_grades)):
+        print("\n\nPREDICTED: " + str(predicted_grades[i]))
+        print("TRUE GRADES: " + str(true_grades[i]))
+        if(true_grades[i] == predicted_grades[i]):
+            num_correct += 1
+
+    print(float(num_correct / len(predicted_grades)))
+ 
 
 
 
