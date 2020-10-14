@@ -3,8 +3,28 @@ import re
 from nltk import RegexpParser
 from nltk.tree import Tree
 from tai_util import get_docs, clean_document, tokenize_sentences
-import math
 
+
+# average features for grade 5 essay (obtained from predict.py)
+predict5th_feature_dict = {}
+predict5th_feature_dict["imperative"] = True 
+predict5th_feature_dict["num_chars"] = 708.86646948
+predict5th_feature_dict["num_words"] = 206.37622155
+predict5th_feature_dict["num_sents"] = 9.16172628
+
+predict5th_feature_dict["avg_chars_per_word"] = 5.12625721
+predict5th_feature_dict["avg_words_per_sent"] = 45.54967897
+
+
+# average features for grade 6 essay (obtained from predict.py)
+predict6th_feature_dict = {}
+predict6th_feature_dict["imperative"] = True 
+predict6th_feature_dict["num_chars"] = 846.1004423
+predict6th_feature_dict["num_words"] = 247.46135645
+predict6th_feature_dict["num_sents"] = 10.75622246
+
+predict6th_feature_dict["avg_chars_per_word"] = 5.02876279
+predict6th_feature_dict["avg_words_per_sent"] = 51.43039091
 
 
 
@@ -18,7 +38,7 @@ def grade_ending(doc, classifier):
     # get basic metrics of conclusion
     num_words = len(nltk.word_tokenize(concl))
 
-    # classify general complexity of essay into 1, 2, 3, 4, 5, 6
+    # classify general complexity of essay
     complexity = classify_complexity(concl, classifier)
 
     # classify conclusions using these metrics
@@ -27,8 +47,6 @@ def grade_ending(doc, classifier):
     else:
         return complexity
     
-
-
 
 
 def get_conclusion(doc):
@@ -41,8 +59,51 @@ def classify_complexity(concl, classifier):
     feature_dict = make_feature_dict(concl)
     if(feature_dict is None):
         return 0
+    elif(predict5th(feature_dict)):
+        return 5
+    elif(predict6th(feature_dict)):
+        return 6
     else:
         return classifier.classify(feature_dict)
+
+
+
+def predict5th(feature_dict):
+    is_5th_grade_essay = True
+    if(feature_dict["imperative"] == False):
+        is_5th_grade_essay = False
+    if(abs(feature_dict["num_chars"] - predict5th_feature_dict["num_chars"]) > 50):
+        is_5th_grade_essay = False
+    if(abs(feature_dict["num_words"] - predict5th_feature_dict["num_words"]) > 10):
+        is_5th_grade_essay = False
+    if(abs(feature_dict["num_sents"] - predict5th_feature_dict["num_sents"]) > 3):
+        is_5th_grade_essay = False
+    if(abs(feature_dict["avg_chars_per_word"] - predict5th_feature_dict["avg_chars_per_word"]) > 3):
+        is_5th_grade_essay = False
+    if(abs(feature_dict["avg_words_per_sent"] - predict5th_feature_dict["avg_words_per_sent"]) > 5):
+        is_5th_grade_essay = False
+
+    return is_5th_grade_essay
+
+
+
+def predict6th(feature_dict):
+    is_6th_grade_essay = True
+    if(feature_dict["imperative"] == False):
+        is_6th_grade_essay = False
+    if(abs(feature_dict["num_chars"] - predict6th_feature_dict["num_chars"]) > 50):
+        is_6th_grade_essay = False
+    if(abs(feature_dict["num_words"] - predict6th_feature_dict["num_words"]) > 10):
+        is_6th_grade_essay = False
+    if(abs(feature_dict["num_sents"] - predict6th_feature_dict["num_sents"]) > 3):
+        is_6th_grade_essay = False
+    if(abs(feature_dict["avg_chars_per_word"] - predict6th_feature_dict["avg_chars_per_word"]) > 3):
+        is_6th_grade_essay = False
+    if(abs(feature_dict["avg_words_per_sent"] - predict6th_feature_dict["avg_words_per_sent"]) > 5):
+        is_6th_grade_essay = False
+
+    return is_6th_grade_essay
+
 
 
 
@@ -112,13 +173,10 @@ def extact_training_data(docs):
 
         # get grade and round down
         grade = doc["grades"][1]["score"]["criteria"]["ending"]
-        grade = math.floor(grade)
         # appends (conclusion, grade of ending) to training_data
         training_data.append((concl, grade))
 
     return training_data
-
-
 
 
 
@@ -146,7 +204,6 @@ def is_imperative(tagged_sent):
             return True
 
     return False
-
 
 
 

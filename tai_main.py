@@ -1,8 +1,7 @@
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import precision_recall_fscore_support
 import json 
 from tai_util import *
 from tai_ending import train_complexity_classifier, grade_ending, extact_training_data, grade_ending
-import math
 import pandas as pd
 
 
@@ -28,14 +27,9 @@ def main():
         ending_grade = grade_ending(doc["plaintext"], concl_classifier)
         predicted_grades.append(ending_grade)
 
-    output_accuracy(true_grades, predicted_grades)
 
-    cm = confusion_matrix(true_grades, predicted_grades)
 
-    # change confusion matrix to data frame and output to csv
-    cm_as_df=cm2df(cm,list(set(true_grades)))
-    cm_as_df.to_csv("ending_confusion_matrix.csv")
-    
+
 
 
 def output_accuracy(true_grades, predicted_grades):
@@ -53,23 +47,10 @@ def get_true_grades(documents):
     true_grades = []
     for doc in documents:
         grade = doc["grades"][1]["score"]["criteria"]["ending"]
-        grade = math.floor(grade)
         true_grades.append(grade)
 
     return true_grades
 
-
-
-def cm2df(cm, labels):
-    df = pd.DataFrame()
-    # rows
-    for i, row_label in enumerate(labels):
-        rowdata={}
-        # columns
-        for j, col_label in enumerate(labels): 
-            rowdata[col_label]=cm[i,j]
-        df = df.append(pd.DataFrame.from_dict({row_label:rowdata}, orient='index'))
-    return df[labels]
 
 
 
