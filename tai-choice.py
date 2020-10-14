@@ -109,7 +109,7 @@ if __name__ == '__main__':
     
     subjects = extract_subjects(document)
 
-    vocab_score = evaluate_vocab(subjects, document)
+    vocab_score = evaluate_vocab(subjects, document) * 0.8
     # print('Vocab score: ', vocab_score)
 
     tone_score = evaluate_tone(document)
