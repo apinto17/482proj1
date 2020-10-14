@@ -1,4 +1,4 @@
-from sklearn.metrics import precision_recall_fscore_support
+
 import json 
 from tai_util import *
 from tai_ending import train_complexity_classifier, grade_ending, extact_training_data, grade_ending
@@ -27,7 +27,9 @@ def main():
         ending_grade = grade_ending(doc["plaintext"], concl_classifier)
         predicted_grades.append(ending_grade)
 
+    accuracy = output_accuracy(true_grades, predicted_grades)
 
+    print("Accuracy: " + str(accuracy))
 
 
 
@@ -38,7 +40,7 @@ def output_accuracy(true_grades, predicted_grades):
         if(true_grades[i] == predicted_grades[i]):
             num_correct += 1
 
-    print(float(num_correct / len(predicted_grades)))
+    return float(num_correct / len(predicted_grades))
  
 
 
