@@ -3,6 +3,12 @@ import re
 from nltk import RegexpParser
 from nltk.tree import Tree
 from tai_util import get_docs, clean_document, tokenize_sentences
+from nltk.stem import WordNetLemmatizer 
+from sklearn.metrics import confusion_matrix, precision_recall_fscore_support
+import json 
+from tai_util import *
+import pandas as pd
+import numpy as np
 
 
 # average features for grade 5 essay (obtained from predict.py)
@@ -27,6 +33,37 @@ predict6th_feature_dict["avg_chars_per_word"] = 5.02876279
 predict6th_feature_dict["avg_words_per_sent"] = 51.43039091
 
 
+# list of emotional words
+emotional_words = ["content", "bother", "uncomfortable", "shy",
+                    "glad", "blah", "annoy", "startle", "curious",
+                    "please", "blue", "irritate", "uneasy", "sass",
+                    "playful", "gloomy", "mean", "tense", "weird",
+                    "cheerful", "rotten", "crabby", "anxious", "confuse",
+                    "giddy", "sad", "cranky", "worry", "moody",
+                    "calm", "unhappy", "grumpy", "concern", "small",
+                    "comfortable", "empty", "grouchy", "timid", "quiet",
+                    "cozy", "jealous", "safe", "embarrass",
+                    "relax", "guilty", "cold",
+                    "confident", "responsible", "strong", "concern",
+                    "peaceful", "asham", "caring", "bored",
+                    "delight", "disappoint", "disgust", "alarm",
+                    "jolly", "hurt", "scare",
+                    "bubbly", "lost", "mad", "afraid",
+                    "tickle", "sorry", "angry", "frighten",
+                    "silly", "ashame", "smoldering", "fearful",
+                    "frisky", "lonely", "hot", "threaten",
+                    "happy", "down", "frustrate", "trembly",
+                    "proud", "hopeless", "impatient", "shaken",
+                    "joyful", "discourag", "disturb",
+                    "excite", "awful", "thankful", "great", 
+                    "love", "blissful", "grateful",
+                    "satisfy", "alive", "miserable", "dread",
+                    "sparkle", "crush", "fuming", "panic",
+                    "wonderful", "helpless", "infuriate", "terrify",
+                    "ecstatic", "depress", "destructive", "horrible",
+                    "terrific", "withdrawn", "explosive", "petrify",
+                    "jubilant", "heartbroken", "violent"]
+
 
 
 
@@ -42,10 +79,7 @@ def grade_ending(doc, classifier):
     complexity = classify_complexity(concl, classifier)
 
     # classify conclusions using these metrics
-    if(num_words == 1):
-        return 0
-    else:
-        return complexity
+    return str(complexity)
     
 
 
@@ -106,12 +140,12 @@ def predict6th(feature_dict):
 
 
 
-
 # classifier for overall complexity using the following features:
 #   1. Number of words
 #   2. Number of sentences
 #   3. Average characters in words
 #   4. Average words per sentence
+#   5. Contains imperative sentence or question (indicative of call to action)
 # takes a list of tuples of each doc in the form: [(essay, grade) ... ]
 # returns classifier
 def train_complexity_classifier(train):
@@ -124,7 +158,6 @@ def train_complexity_classifier(train):
             training_set.append((feature_dict, grade))
 
     return nltk.classify.NaiveBayesClassifier.train(training_set)
-
 
 
 
@@ -150,10 +183,8 @@ def make_feature_dict(concl):
 
     feature_dict["avg_chars_per_word"] = (num_chars / num_words)
     feature_dict["avg_words_per_sent"] = (num_words / num_sents)
-
-
+  
     return feature_dict
-
 
 
 
@@ -219,6 +250,79 @@ def get_chunks(tagged_sent):
     chunkparser = RegexpParser(chunkgram)
     return chunkparser.parse(tagged_sent)
 
+
+
+def main():
+    documents = get_docs("tai-documents-v3.json")
+
+    # make train test splits
+    train_test_partition = int(.7 * len(documents))
+
+    # train conclusion classifier
+    training_data = extact_training_data(documents[:train_test_partition])
+    test_data = documents[train_test_partition:]
+    concl_classifier = train_complexity_classifier(training_data)
+
+    # get actual grades reported from teachers
+    true_grades = get_true_grades(test_data)
+
+    predicted_grades = []
+    for doc in test_data:
+        ending_grade = grade_ending(doc["plaintext"], concl_classifier)
+        predicted_grades.append(ending_grade)
+
+
+    accuracy = get_accuracy(true_grades, predicted_grades)
+    precession, recall, fscore, _ = precision_recall_fscore_support(true_grades, predicted_grades, average="micro")
+
+    print("Accuracy: " + str(accuracy))
+    print("Precision: " + str(precession))
+    print("Recall: " + str(recall))
+    print("F-Score: " + str(fscore))
+
+    cm = confusion_matrix(true_grades, predicted_grades)
+
+    # change confusion matrix to data frame and output to csv
+    cm_as_df=cm2df(cm,list(set(true_grades)))
+    cm_as_df.to_csv("ending_confusion_matrix.csv")    
+
+
+def get_accuracy(true_grades, predicted_grades):
+    num_correct = 0
+    for i in range(len(predicted_grades)):
+        if(true_grades[i] == predicted_grades[i]):
+            num_correct += 1
+
+    return float(num_correct / len(predicted_grades))
+ 
+
+
+
+def get_true_grades(documents):
+    true_grades = []
+    for doc in documents:
+        grade = str(doc["grades"][1]["score"]["criteria"]["ending"])
+        true_grades.append(grade)
+
+    return true_grades
+
+
+
+def cm2df(cm, labels):
+    df = pd.DataFrame()
+    # rows
+    for i, row_label in enumerate(labels):
+        rowdata={}
+        # columns
+        for j, col_label in enumerate(labels): 
+            rowdata[col_label]=cm[i,j]
+        df = df.append(pd.DataFrame.from_dict({row_label:rowdata}, orient='index'))
+    return df[labels]
+
+
+
+if(__name__ == "__main__"):
+    main()
 
 
 
